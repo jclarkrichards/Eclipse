@@ -119,6 +119,13 @@ public class GameController : MonoBehaviour
     public void SetActivePiece(GameObject go)
     {
         activePiece = go;
+        sunFlipRedo.interactable = false;
+        moonFlipRedo.interactable = false;
+    }
+
+    public void ReportPieceChosen(GameObject obj)
+    {
+
     }
 
     public void ReportPiecePlacedOnBoard(GameObject obj)
@@ -260,7 +267,14 @@ public class GameController : MonoBehaviour
         }
         else //If a winner is detected
         {
-
+            //Display who won and lock all of the pieces.  
+            //Display Play again or Quit or Replay
+            DeactivateButtons();
+            Utils.DisablePieces(moonPieces);
+            Utils.DisablePieces(sunPieces);
+            //Display LOSER text to the loser facing the loser and WINNER text to winner
+            //This text comes in from the left hand side
+            //Then in the middle fade in the end-game options
         }
 
     }
@@ -285,12 +299,16 @@ public class GameController : MonoBehaviour
             sunFlipRedo.interactable = false;
             GameObject[] flippables = Utils.GetFlippablePieces(moonPieces);
             Utils.EnablePieces(flippables);
+            GameObject[] unPlayedPieces = Utils.GetUnplayedPieces(sunPieces);
+            Utils.DisablePieces(unPlayedPieces);
         }
         else
         {
             moonFlipRedo.interactable = false;
             GameObject[] flippables = Utils.GetFlippablePieces(sunPieces);
             Utils.EnablePieces(flippables);
+            GameObject[] unPlayedPieces = Utils.GetUnplayedPieces(moonPieces);
+            Utils.DisablePieces(unPlayedPieces);
         }
         string flipInfo = record.Pop();
         Dictionary<string, string> parsedInfo = Utils.ParseRecord(flipInfo);

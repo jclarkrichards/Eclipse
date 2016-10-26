@@ -5,18 +5,6 @@ using System.Collections.Generic;
 public class Utils : MonoBehaviour
 {
 
-	// Use this for initialization
-	void Start ()
-    {
-	
-	}
-	
-	// Update is called once per frame
-	void Update ()
-    {
-	
-	}
-
     //Input an index in a 16-element array and return all indices that are adjacent to it
     //Uses an adjacency matrix 
     public static int[] GetAdjacentIndices(int index)

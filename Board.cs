@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 enum Piece
 {
@@ -124,6 +125,23 @@ public class Board : MonoBehaviour
         return false;
     }
 
+    //Checks if indices adjacent to each index is occupied or not
+    //If all adjacent indices are occupied, then return true (locked)
+    public bool CheckIfLocked(int[] indices)
+    {
+        for (int i = 0; i < indices.Length; i++)
+        {
+            int[] adjacents = Utils.GetAdjacentIndices(indices[i]);
+            for(int j=0; j<adjacents.Length; j++)
+            {
+                if (occupants[adjacents[j]] == Piece.empty)
+                    return false;
+            }
+            
+        }
+        return true;
+    }
+
     //This updates the "occupants" array.  Is called by CheckIfWithinThresh whenever a piece is within thresh
     //Returns true if spot is occupied, false if spot is empty
     public bool CheckIfOccupied(GameObject obj, int index)
@@ -205,7 +223,151 @@ public class Board : MonoBehaviour
     //any of them
     public bool CheckForWinner()
     {
-        //Unravel cards horizontally, vertically, and diagonally
-        return false;
+        //Get 3x3 subsets of the 4x4 occupants array, these contain the indices to the occupants array
+        List<Piece> winners = new List<Piece>();
+        List<string> uniqueWinners = new List<string>();
+        int[] A = new int[9] { 0, 1, 2, 4, 5, 6, 8, 9, 10 };
+        winners = CheckHorizontally(A, winners);
+        winners = CheckVertically(A, winners);
+        winners = CheckDiagonally(A, winners);
+        A = new int[9] { 1, 2, 3, 5, 6, 7, 9, 10, 11 };
+        winners = CheckHorizontally(A, winners);
+        winners = CheckVertically(A, winners);
+        winners = CheckDiagonally(A, winners);
+        A = new int[9] { 4, 5, 6, 8, 9, 10, 12, 13, 14 };
+        winners = CheckHorizontally(A, winners);
+        winners = CheckVertically(A, winners);
+        winners = CheckDiagonally(A, winners);
+        A = new int[9] { 5, 6, 7, 9, 10, 11, 13, 14, 15 };
+        winners = CheckHorizontally(A, winners);
+        winners = CheckVertically(A, winners);
+        winners = CheckDiagonally(A, winners);
+
+        for(int i=0; i<winners.Count; i++)
+        {
+            switch(winners[i])
+            {
+                case Piece.moonGold:
+                case Piece.moonSilver:
+                    if (!uniqueWinners.Contains("Moon"))
+                    {
+                        uniqueWinners.Add("Moon");
+                    }
+                    break;
+                case Piece.sunGold:
+                case Piece.sunSilver:
+                    if (!uniqueWinners.Contains("Sun"))
+                    {
+                        uniqueWinners.Add("Sun");
+                    }
+                    break;
+            }
+        }
+
+        if (uniqueWinners.Count == 0)
+        {
+            print("No winners yet");
+            return false;
+        }
+        else if(uniqueWinners.Count == 1)
+        {
+            for (int i = 0; i < winners.Count; i++)
+            {
+                print("Winner = " + winners[i]);
+            }
+            return true;
+        }
+        else
+        {
+            print("game is tied");
+            return false;
+        }
+    }
+
+    //Check for horizontal wins
+    List<Piece> CheckHorizontally(int[] A, List<Piece> winners)
+    {
+        
+        int[] pair = new int[3];
+        for (int i = 0; i < A.Length; i+=3)
+        {
+            
+            Piece a1 = occupants[A[i]];
+            Piece a2 = occupants[A[i + 1]];
+            Piece a3 = occupants[A[i + 2]];
+            if((a1 != 0) && ((a1-a2)==0) && ((a1-a3)==0))
+            {
+                print("Found three of a kind horizontally");
+                pair = new int[3] { A[i], A[i + 1], A[i + 2] };
+                bool locked = CheckIfLocked(pair);
+                if(locked)
+                {
+                    //Add value of occupants[A[i]] to a winners list
+                    winners.Add(occupants[A[i]]);
+                }             
+            }
+        }
+        return winners;
+    }
+
+    //Check for vertical wins
+    List<Piece> CheckVertically(int[] A, List<Piece> winners)
+    {     
+        int[] pair = new int[3];
+        for (int i = 0; i < 3; i++)
+        {
+            Piece a1 = occupants[A[i]];
+            Piece a2 = occupants[A[i + 3]];
+            Piece a3 = occupants[A[i + 6]];
+            if ((a1 != 0) && ((a1 - a2) == 0) && ((a1 - a3) == 0))
+            {
+                print("Found three of a kind vertically");
+                pair = new int[3] { A[i], A[i + 3], A[i + 6] };
+                bool locked = CheckIfLocked(pair);
+                if (locked)
+                {
+                    //Add value of occupants[A[i]] to a winners list
+                    winners.Add(occupants[A[i]]);
+                }
+            }
+        }
+        return winners;
+    }
+
+    //Check for diagonal wins
+    List<Piece> CheckDiagonally(int[] A, List<Piece> winners)
+    {
+        int[] pair = new int[3];
+        Piece a1 = occupants[A[0]];
+        Piece a2 = occupants[A[4]];
+        Piece a3 = occupants[A[8]];
+        if ((a1 != 0) && ((a1 - a2) == 0) && ((a1 - a3) == 0))
+        {
+            print("Found three of a kind diagonally");
+            pair = new int[3] { A[0], A[4], A[8] };
+            bool locked = CheckIfLocked(pair);
+            if (locked)
+            {
+                //Add value of occupants[A[i]] to a winners list
+                winners.Add(occupants[A[0]]);
+            }
+        }
+
+        a1 = occupants[A[2]];
+        a2 = occupants[A[4]];
+        a3 = occupants[A[6]];
+        if ((a1 != 0) && ((a1 - a2) == 0) && ((a1 - a3) == 0))
+        {
+            print("Found three of a kind diagonally");
+            pair = new int[3] { A[2], A[4], A[6] };
+            bool locked = CheckIfLocked(pair);
+            if (locked)
+            {
+                //Add value of occupants[A[i]] to a winners list
+                winners.Add(occupants[A[2]]);
+            }
+        }
+
+        return winners;
     }
 }
