@@ -7,6 +7,8 @@ public enum Player
 {
     sun,
     moon,
+    sunNPC,
+    moonNPC
 }
 
 public enum Phase
@@ -14,6 +16,16 @@ public enum Phase
     flip,
     movePiece,
     changeSide
+}
+
+public class ZoomTextTemplate
+{
+    public GameObject obj { get; set; }
+    public Vector3 start { get; set; }
+    public Vector3 mid { get; set; }
+    public Vector3 end { get; set; }
+    public bool show { get; set; }
+    public bool reachedMidPoint { get; set; }
 }
 
 public class GameController : MonoBehaviour
@@ -38,6 +50,12 @@ public class GameController : MonoBehaviour
     public GameObject sunTable;
     public GameObject moonTable;
 
+    //Text that comes on and off of the screen
+    public GameObject sunTurnText;
+    public GameObject moonTurnText;
+    public GameObject winnerTextPrefab;
+    public GameObject loserTextPrefab;
+
     //public bool divider _______________________;
     //The Moon and Sun GameObjects are stored in these two arrays
     GameObject[] sunPieces;
@@ -53,9 +71,19 @@ public class GameController : MonoBehaviour
     //For recording the moves
     Stack<string> record;
 
+    //Zoom zoom objects
+    ZoomTextTemplate sunZoom;
+    ZoomTextTemplate moonZoom;
+    ZoomTextTemplate winnerZoom;
+    ZoomTextTemplate loserZoom;
+
     void Awake()
     {
         S = this;
+        sunZoom = new ZoomTextTemplate { obj = sunTurnText, start = new Vector3(6, 1.6f, 0), mid = new Vector3(0, 1.6f, 0), end = new Vector3(-6, 1.6f, 0), show = false, reachedMidPoint = false };
+        moonZoom = new ZoomTextTemplate { obj = moonTurnText, start = new Vector3(-6, -1.6f, 0), mid = new Vector3(0, -1.6f, 0), end = new Vector3(6, -1.6f, 0), show = false, reachedMidPoint = false };
+        winnerZoom = new ZoomTextTemplate { show = false, reachedMidPoint = false };
+        loserZoom = new ZoomTextTemplate { show = false, reachedMidPoint = false };
     }
 
     // Use this for initialization
@@ -64,24 +92,54 @@ public class GameController : MonoBehaviour
         CreatePieces();
         //Board.S.Test(sunPieces);
         InitializePositions();
-        SwitchPlayers();
-        
+        SwitchPlayers();       
         record = new Stack<string>();
-
-        //record.Push("hello");
-        //record.Push("there");
-        //print(record.Peek());
-        //string s = record.Pop();
-        //print(s);
-        //print(record.Peek());
-
     }
 	
 	// Update is called once per frame
 	void Update ()
     {
-	
-	}
+        if (sunZoom.show)
+        {
+            StartCoroutine(ZoomText(sunZoom));
+        }
+        if (moonZoom.show)
+        {
+            StartCoroutine(ZoomText(moonZoom));
+        }
+        if(winnerZoom.show)
+        {
+            winnerZoom.show = !MoveToLocation(winnerZoom.obj, winnerZoom.end);
+            //StartCoroutine(ZoomText(winnerZoom));
+        }
+        if (loserZoom.show)
+        {
+            loserZoom.show = !MoveToLocation(loserZoom.obj, loserZoom.end);
+            //StartCoroutine(ZoomText(loserZoom));
+        }
+    }
+
+    //Zoom text to a position, wait for 1 second, then zoom to another position
+    IEnumerator ZoomText(ZoomTextTemplate zoomObj)
+    {
+        //print(sunZoom.reachedMidPoint);
+        while (zoomObj.reachedMidPoint == false)
+        {
+            zoomObj.reachedMidPoint = MoveToLocation(zoomObj.obj, zoomObj.mid);
+            yield return null;
+        }
+        yield return new WaitForSeconds(1);
+        zoomObj.show = !MoveToLocation(zoomObj.obj, zoomObj.end);
+    }
+
+    //Lerp GameObject from current position to some end position
+    //Returns true when reaches position, false otherwise
+    bool MoveToLocation(GameObject obj, Vector3 end)
+    {
+        bool atEnd = Utils.MoveLerp(obj, obj.transform.position, end);
+        if (atEnd) { return true; }       
+        return false;
+    }    
 
     //Instantiate all of the Moon and Sun pieces
     void CreatePieces()
@@ -201,14 +259,7 @@ public class GameController : MonoBehaviour
             if((activePlayer == Player.sun && activePiece.tag == "Sun") ||
                 (activePlayer == Player.moon && activePiece.tag == "Moon"))
             {
-                //print(activePlayer + "  " + activePiece.name);
                 activePiece.GetComponent<GamePiece>().Flip();
-
-                //Side side = activePiece.GetComponent<GamePiece>().side;
-                //if (side == Side.gold)
-                //    activePiece.GetComponent<GamePiece>().side = Side.silver;
-                //else
-                //    activePiece.GetComponent<GamePiece>().side = Side.gold;
             }
             
         }
@@ -217,19 +268,25 @@ public class GameController : MonoBehaviour
     //Switches the active player when the "End" button is pressed
     public void SwitchPlayers()
     {
-        bool winner = Board.S.CheckForWinner();
-        if (!winner)
+        string winner = Board.S.CheckForWinner();
+        if (winner == "")//what if all pieces have been used and still no winners?
         {
             DeactivateButtons();
             //print(activePiece.name);
+            //Record the last move the previous player played to the board
             if (activePiece != null)
             {
                 RecordMove(Utils.CreateStringFromPlacement(activePiece));
                 activePiece.GetComponent<GamePiece>().ChangeMovement();
             }
 
+
+
             if (activePlayer == Player.sun)
-            {   //Make moon the active player           
+            {   //Make moon the active player 
+                moonZoom.obj.transform.position = moonZoom.start;
+                moonZoom.show = true;
+                moonZoom.reachedMidPoint = false;
                 Utils.DimObject(sunTable);
                 Utils.UndimObject(moonTable);
                 activePlayer = Player.moon;
@@ -248,6 +305,9 @@ public class GameController : MonoBehaviour
             }
             else
             {   //Make Sun the active player
+                sunZoom.obj.transform.position = sunZoom.start;
+                sunZoom.show = true;
+                sunZoom.reachedMidPoint = false;
                 Utils.DimObject(moonTable);
                 Utils.UndimObject(sunTable);
                 activePlayer = Player.sun;
@@ -275,6 +335,37 @@ public class GameController : MonoBehaviour
             //Display LOSER text to the loser facing the loser and WINNER text to winner
             //This text comes in from the left hand side
             //Then in the middle fade in the end-game options
+            if(winner == "Sun")
+            {
+                GameObject winnerText = Instantiate(winnerTextPrefab) as GameObject;
+                GameObject loserText = Instantiate(loserTextPrefab) as GameObject;
+                Vector3 scale = winnerText.transform.localScale;
+                scale.x *= -1;
+                scale.y *= -1;
+                winnerText.transform.localScale = scale;
+                winnerText.transform.position = new Vector3(6, 1.6f, 0);
+                loserText.transform.position = new Vector3(-6, -1.6f, 0);
+                winnerZoom = new ZoomTextTemplate { obj = winnerText, start = new Vector3(6, 1.6f, 0), mid = new Vector3(0, 1.6f, 0), end = new Vector3(0, 1.6f, 0), show = true, reachedMidPoint = false };
+                loserZoom = new ZoomTextTemplate { obj = loserText, start = new Vector3(-6, -1.6f, 0), mid = new Vector3(0, -1.6f, 0), end = new Vector3(0, -1.6f, 0), show = true, reachedMidPoint = false };
+            }
+            else if (winner == "Moon")
+            {
+                GameObject winnerText = Instantiate(winnerTextPrefab) as GameObject;
+                GameObject loserText = Instantiate(loserTextPrefab) as GameObject;
+                Vector3 scale = loserText.transform.localScale;
+                scale.x *= -1;
+                scale.y *= -1;
+                loserText.transform.localScale = scale;
+                winnerText.transform.position = new Vector3(-6, -1.6f, 0);
+                loserText.transform.position = new Vector3(6, 1.6f, 0);
+                loserZoom = new ZoomTextTemplate { obj = loserText, start = new Vector3(6, 1.6f, 0), mid = new Vector3(0, 1.6f, 0), end = new Vector3(0, 1.6f, 0), show = true, reachedMidPoint = false };
+                winnerZoom = new ZoomTextTemplate { obj = winnerText, start = new Vector3(-6, -1.6f, 0), mid = new Vector3(0, -1.6f, 0), end = new Vector3(0, -1.6f, 0), show = true, reachedMidPoint = false };
+            }
+            else
+            {
+
+            }
+
         }
 
     }

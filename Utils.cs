@@ -187,4 +187,28 @@ public class Utils : MonoBehaviour
         //return obj;
     }
 
+    public static Vector3 Interpolate(Vector3 p0, Vector3 p1)
+    {   //Linearly interpolate between two positions
+        float u = 0.1f;
+        return (1 - u) * p0 + u * p1;
+    }
+
+    public static bool MoveLerp(GameObject obj, Vector3 start, Vector3 end)
+    {   //Used to move obj from start position to end position
+        Vector3 pos = Interpolate(start, end);
+        obj.transform.position = pos;
+        return ReachedEndPosition(start, end);
+    }
+
+    public static bool ReachedEndPosition(Vector3 start, Vector3 end)
+    {
+        float thresh = 0.05f;
+        Vector3 diffVec = end - start;
+        if (Mathf.Abs(diffVec.x) < thresh && Mathf.Abs(diffVec.y) < thresh && Mathf.Abs(diffVec.z) < thresh)
+        {
+            return true;
+        }
+        return false;
+    }
+
 }

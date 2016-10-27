@@ -221,7 +221,7 @@ public class Board : MonoBehaviour
     //A winner is when there are 3 same values in a row either horizontally, vertically, or diagonally
     //These 3 values also have to be "locked", meaning that there aren't any empty values adjacent to 
     //any of them
-    public bool CheckForWinner()
+    public string CheckForWinner()
     {
         //Get 3x3 subsets of the 4x4 occupants array, these contain the indices to the occupants array
         List<Piece> winners = new List<Piece>();
@@ -267,7 +267,7 @@ public class Board : MonoBehaviour
         if (uniqueWinners.Count == 0)
         {
             print("No winners yet");
-            return false;
+            return "";
         }
         else if(uniqueWinners.Count == 1)
         {
@@ -275,12 +275,12 @@ public class Board : MonoBehaviour
             {
                 print("Winner = " + winners[i]);
             }
-            return true;
+            return uniqueWinners[0];
         }
         else
         {
             print("game is tied");
-            return false;
+            return "Tied";
         }
     }
 
